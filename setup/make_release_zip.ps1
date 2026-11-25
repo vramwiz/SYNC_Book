@@ -56,9 +56,12 @@ try {
         throw 'The catalog GitHub source must match this repository and ZIP name.'
     }
     $uninstall = @($entry.installer.uninstall)
-    if ($uninstall.Count -ne 1 -or $uninstall[0].action -cne 'delete' -or
-        $uninstall[0].path -cne "{pluginsDir}/$packageName") {
-        throw 'The catalog uninstall action must delete only the plugin folder.'
+    $packagedFiles = @("$packageName.auf2", 'README.md', 'LICENSE', 'THIRD_PARTY_NOTICES.md', 'ThirdParty/LICENSE.AviUtl2-SDK.txt')
+    $expectedPaths = @($packagedFiles | ForEach-Object { "{pluginsDir}/$packageName/$_" })
+    $deletePaths = @($uninstall | Where-Object action -ceq 'delete' | ForEach-Object path)
+    if ($uninstall.Count -ne $expectedPaths.Count -or $deletePaths.Count -ne $expectedPaths.Count -or
+        @(Compare-Object $expectedPaths $deletePaths -CaseSensitive).Count -ne 0) {
+        throw 'The catalog uninstall paths must list every installed file exactly once.'
     }
     $copyEntry = @($entry.installer.install | Where-Object action -ceq 'copy')
     if ($copyEntry.Count -ne 1 -or $copyEntry[0].from -cne "{tmp}/$packageName" -or
