@@ -3,7 +3,7 @@
         "id":  "VRAMWIZ.SYNC_Book",
         "name":  "本演出",
         "type":  "フィルタプラグイン",
-        "summary":  "13種類の本を3Dで描画し、表紙の開閉や6種類のページめくりを演出。表紙とページに画像を設定できます。",
+        "summary":  "13種類の立体的な本を描き、表紙の開閉やページめくりを演出",
         "description":  "https://raw.githubusercontent.com/vramwiz/SYNC_Book/refs/heads/main/README.md",
         "author":  "VRAMの魔術師",
         "repoURL":  "https://github.com/vramwiz/SYNC_Book/",
