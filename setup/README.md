@@ -13,6 +13,6 @@ setup\make_release_zip.bat
 setup\make_release_zip.bat -ReleaseDirectory "D:\Release\SYNC_Book" -XxhsumPath "D:\Tools\xxhsum.exe"
 ```
 
-ZIP は `SYNC_Book/` をルートとし、AUF2、利用者向け README、ライセンスを収録します。カタログのアンインストールでは ZIP からインストールしたファイルのみを個別に削除します。
+ZIP は `SYNC_Book/` をルートとし、AUF2、利用者向け README、ライセンスを収録します。カタログのアンインストール対象は `{pluginsDir}/SYNC_Book` フォルダーです。
 
 GitHub Releases には ZIP と `SYNC_Book.catalog.json` を添付します。

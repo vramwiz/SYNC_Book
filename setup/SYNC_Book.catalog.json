@@ -55,27 +55,11 @@
                                           }
                                       ],
                           "uninstall":  [
-                              {
-                                  "action":  "delete",
-                                  "path":  "{pluginsDir}/SYNC_Book/SYNC_Book.auf2"
-                              },
-                              {
-                                  "action":  "delete",
-                                  "path":  "{pluginsDir}/SYNC_Book/README.md"
-                              },
-                              {
-                                  "action":  "delete",
-                                  "path":  "{pluginsDir}/SYNC_Book/LICENSE"
-                              },
-                              {
-                                  "action":  "delete",
-                                  "path":  "{pluginsDir}/SYNC_Book/THIRD_PARTY_NOTICES.md"
-                              },
-                              {
-                                  "action":  "delete",
-                                  "path":  "{pluginsDir}/SYNC_Book/ThirdParty/LICENSE.AviUtl2-SDK.txt"
-                              }
-                          ]
+                                            {
+                                                "action":  "delete",
+                                                "path":  "{pluginsDir}/SYNC_Book"
+                                            }
+                                        ]
                       },
         "version":  [
                         {
