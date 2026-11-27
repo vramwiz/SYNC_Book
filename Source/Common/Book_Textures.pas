@@ -148,6 +148,154 @@ begin
   if (Pattern = ppGrid) and (Frac((U-0.10)*18) < 0.05) then Result := 0.43;
 end;
 
+function NewsType(U, V: Double; Columns, Rows, Seed: Integer): Double;
+var
+  Col, Row, X, Y, Bits: Integer;
+begin
+  if (U < 0) or (U >= 1) or (V < 0) or (V >= 1) then Exit(0);
+  U := U*Columns;
+  V := V*Rows;
+  Col := Trunc(U);
+  Row := Trunc(V);
+  X := Trunc(Frac(U)*6);
+  Y := Trunc(Frac(V)*7);
+  if (X = 0) or (X = 5) or (Y >= 5) then Exit(0);
+  Bits := Grain(Col,Row,Seed);
+  if ((Bits shr ((2*X+3*Y) mod 8)) and 1 <> 0) or
+    ((Y = 2) and (X < 4)) or ((X = 2) and (Y > 0)) then Exit(1);
+  Result := 0;
+end;
+
+function NewsArticle(U, V: Double; Seed: Integer): Double;
+var
+  Col: Integer;
+begin
+  if U < 0.012 then Exit(0.33);
+  if U > 0.82 then
+    Exit(0.93*NewsType((U-0.82)/0.17,V/0.84,1,7,Seed));
+  Col := Trunc(U*8);
+  if V > 0.94-0.12*(Grain(Col,0,Seed) mod 3)/2 then Exit(0);
+  Result := 0.72*NewsType((U-0.045)/0.76,(V-0.024)/0.94,8,16,Seed);
+end;
+
+function NewsPhoto(U, V: Double; X, Y, Seed: Integer): Double;
+var
+  Block, Tone: Double;
+begin
+  Block := U*12;
+  Tone := 0.26+0.18*V;
+  if V > 0.69-0.29*Grain(Trunc(Block),0,Seed)/255 then
+  begin
+    Tone := 0.54+0.21*Grain(Trunc(Block),1,Seed)/255;
+    if (Frac(Block) < 0.30) and (Frac(V*21) < 0.28) then Tone := Tone-0.20;
+  end;
+  if V > 0.84+0.09*U then Tone := 0.74-0.16*U;
+  Result := Tone+0.08*((X+Y) mod 3-1);
+end;
+
+function NewsSchedule(U, V: Double; Columns, Slots, Seed: Integer): Double;
+var
+  Col, Slot, Offset: Integer;
+begin
+  U := U*Columns;
+  Col := Trunc(U);
+  U := Frac(U);
+  if U < 0.006*Columns then Exit(0.55);
+  if V < 0.075 then
+  begin
+    if (U < 0.20) or (U > 0.94) then Exit(0);
+    Exit(0.84-0.72*NewsType((U-0.20)/0.74,(V-0.014)/0.055,4,1,Seed+Col));
+  end;
+  V := (V-0.075)*Slots/0.925;
+  Slot := Trunc(V);
+  V := Frac(V);
+  Offset := Grain(Col,Slot,Seed) mod 3;
+  if (V < 0.032) and ((Slot = 0) or (Offset <> 1)) then Exit(0.47);
+  if U < 0.25 then
+    Exit(0.87*NewsType((U-0.12)/0.13,(V-0.10)/0.30,1,1,Seed+Slot));
+  if (V > 0.53) and (U > 0.90-0.10*Offset) then Exit(0);
+  Result := 0.8*NewsType((U-0.27)/0.70,(V-0.11)/0.83,5,2+Ord(Offset=0),
+    Seed+Col*31+Slot);
+end;
+
+function NewsMarks(Pattern: TPaperPattern; U, V: Double; X, Y, Seed, Layout: Integer): Double;
+var
+  Band, Col: Integer;
+  Cell: Double;
+begin
+  Result := 0;
+  if (U < 0.042) or (U >= 0.958) or (V < 0.032) or (V >= 0.968) then Exit;
+  U := (U-0.042)/0.916;
+  V := (V-0.032)/0.936;
+  case Pattern of
+    ppNewsFront:
+      begin
+        if (Abs(V-0.086) < 0.002) or (Abs(V-0.097) < 0.0015) then Exit(0.72);
+        if V < 0.10 then
+        begin
+          if U > 0.45 then
+            Exit(NewsType((U-0.45)/0.55,(V-0.001)/0.082,5,1,131));
+          Exit(0.75*NewsType(U/0.31,(V-0.027)/0.052,15,3,241));
+        end;
+        if V < 0.472 then
+        begin
+          if U > 0.83 then
+            Exit(NewsType((U-0.83)/0.17,(V-0.109)/0.361,1,5,317));
+          if U > 0.69 then
+            Exit(0.86*NewsType((U-0.72)/0.092,(V-0.13)/0.27,1,7,421));
+          if U > 0.44 then Exit(NewsArticle((U-0.44)/0.25,(V-0.106)/0.366,57));
+          if V < 0.365 then
+          begin
+            if (U < 0.423) and (V >= 0.12) then
+              Result := NewsPhoto(U/0.423,(V-0.12)/0.245,X,Y,69);
+            Exit;
+          end;
+          Exit(0.79*NewsType(U/0.423,(V-0.373)/0.085,21,5,79));
+        end;
+        V := (V-0.472)*3/0.528;
+        Band := Trunc(V);
+        V := Frac(V);
+        U := U*3;
+        Col := Trunc(U);
+        if V < 0.023 then Exit(0.56);
+        Result := NewsArticle(Frac(U),V,23+Band*107+Col*37);
+      end;
+    ppNewsprint:
+      begin
+        if V < 0.045 then
+        begin
+          if Abs(V-0.038) < 0.002 then Exit(0.62);
+          Exit(0.82*NewsType((U-0.74)/0.26,V/0.034,8,1,Seed));
+        end;
+        V := (V-0.045)*4/0.955;
+        Band := Trunc(V);
+        V := Frac(V);
+        U := U*3;
+        Col := Trunc(U);
+        Cell := Frac(U);
+        if V < 0.017 then Exit(0.49);
+        if (Band = Layout mod 4) and (Col = (Layout div 7) mod 3) and
+          (Cell > 0.06) and (Cell < 0.94) and (V > 0.08) and (V < 0.74) then
+          Exit(NewsPhoto((Cell-0.06)/0.88,(V-0.08)/0.66,X,Y,Seed));
+        Result := NewsArticle(Cell,V,Seed+Band*107+Col*37);
+      end;
+    ppNewsBack:
+      begin
+        if (Abs(V-0.088) < 0.002) or (Abs(V-0.794) < 0.002) or
+          (V > 0.996) or (U > 0.997) then Exit(0.75);
+        if V < 0.088 then
+        begin
+          if U < 0.46 then Exit(NewsType(U/0.46,V/0.078,6,1,527));
+          Exit(0.74*NewsType((U-0.64)/0.36,(V-0.022)/0.044,16,2,163));
+        end;
+        if V < 0.75 then Exit(NewsSchedule(U,(V-0.088)/0.662,7,11,194));
+        if V < 0.796 then
+          Exit(0.92*NewsType(U/0.31,(V-0.755)/0.036,7,1,259));
+        Result := NewsSchedule(U,(V-0.796)/0.204,5,4,776);
+      end;
+  end;
+end;
+
 function CoverMarks(Kind: TTextureKind; U, V: Double): Double;
 var
   Edge, CornerX, CornerY, R, T: Double;
@@ -192,6 +340,7 @@ var
   U, V, Light, InkAmount, Edge: Double;
   Ink: Cardinal;
   Pixel: PPIXEL_RGBA;
+  Newsprint: Boolean;
 
   function Channel(Shift: Integer): Byte;
   var
@@ -205,13 +354,15 @@ var
 begin
   SetLength(Entry.Pixels,Entry.Width*Entry.Height);
   Layout := Grain(0,0,Entry.Seed);
+  Newsprint := (Entry.Kind = txPaper) and (Entry.Pattern >= Ord(ppNewsprint));
   for Y := 0 to Entry.Height-1 do
   begin
     V := (Y+0.5)/Entry.Height;
     for X := 0 to Entry.Width-1 do
     begin
       U := (X+0.5)/Entry.Width;
-      Noise := Grain(X,Y,Entry.Seed);
+      if Newsprint then Noise := Grain(X,Y,0)
+      else Noise := Grain(X,Y,Entry.Seed);
       Light := 1;
       InkAmount := 0;
       Ink := Gold;
@@ -229,9 +380,17 @@ begin
       end else if Entry.Kind = txPaper then
       begin
         Ink := Entry.Ink;
-        InkAmount := PaperMarks(TPaperPattern(Entry.Pattern),X,Y,Entry.Seed,Layout,U,V);
-        Light := 0.98 + Noise*0.00016 + Min(0.02,Edge*0.12)
-          - 0.095*Sqr(Max(0.0,1-Edge*18));
+        if Newsprint then
+        begin
+          InkAmount := NewsMarks(TPaperPattern(Entry.Pattern),U,V,X,Y,Entry.Seed,Layout);
+          Light := 0.963 + Noise*0.00021 + Grain(X div 4,Y div 3,0)*0.00010
+            - 0.025*Sqr(Max(0.0,1-Edge*20));
+        end else
+        begin
+          InkAmount := PaperMarks(TPaperPattern(Entry.Pattern),X,Y,Entry.Seed,Layout,U,V);
+          Light := 0.98 + Noise*0.00016 + Min(0.02,Edge*0.12)
+            - 0.095*Sqr(Max(0.0,1-Edge*18));
+        end;
       end else
       begin
         case TCoverPattern(Entry.Pattern) of
@@ -266,12 +425,22 @@ end;
 function TBookTextures.Pixels(const Mat: TBookMaterial;
   out Width, Height: Integer): TBookPixels;
 var
-  I, Oldest: Integer;
+  I, Oldest, MaxHeight: Integer;
   Slot: ^TTextureEntry;
 begin
   Width := 224;
+  MaxHeight := 352;
   if Mat.Kind = txSpine then Width := 96;
-  Height := EnsureRange(Round(Width*Mat.Aspect),96,352);
+  if Mat.Kind = txPaper then
+    case TPaperPattern(Mat.Pattern) of
+      ppNewsprint..ppNewsBack:
+        begin
+          Width := 320;
+          MaxHeight := 608;
+        end;
+      ppNewsStock: Width := 96;
+    end;
+  Height := EnsureRange(Round(Width*Mat.Aspect),96,MaxHeight);
   if Mat.Kind in [txPaperEdge,txGutter] then
   begin
     Width := 128;

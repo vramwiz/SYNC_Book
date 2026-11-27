@@ -34,7 +34,8 @@ var
   DrawCount, VertexCount, TextureCount, SectionReads: Integer;
   AnchorWidth, AnchorHeight, CameraMode: Integer;
   Paths: TStringList;
-  CapturePaper: Boolean;
+  CapturePaperWidth: Integer;
+  NewsMargin: TPIXEL_RGBA;
   PaperHashes: TArray<string>;
   CurrentAlpha, MinImageU, MaxImageU, MinImageV, MaxImageV: Single;
   FrontCoverNormalZ, FrontCoverMaxAbsZ: Single;
@@ -208,9 +209,14 @@ begin
   Size := Width*Height*SizeOf(TPIXEL_RGBA);
   Bytes.WriteBuffer(Pixels^,Size);
   Inc(TextureCount);
-  // この検査では表紙・背表紙を外部画像にし、紙面だけを比較する。
-  if CapturePaper and (Width=224) then
+  if Width=CapturePaperWidth then
   begin
+    if CapturePaperWidth=320 then
+    begin
+      if Length(PaperHashes)=0 then NewsMargin := Pixels^
+      else Check(CompareMem(Pixels,@NewsMargin,SizeOf(NewsMargin)),
+        'Newspaper faces must have the same unprinted paper stock');
+    end;
     Hash := THashSHA2.Create;
     Hash.Update(Pixels^,Size);
     PaperHashes := PaperHashes+[Hash.HashAsString];
@@ -400,7 +406,7 @@ var
   MidHash: string;
 begin
   CameraMode := 1;
-  CapturePaper := True;
+  CapturePaperWidth := 224;
   FileItem('表紙の外側画像','mock-board');
   FileItem('表紙の内側画像','mock-board');
   FileItem('裏表紙の外側画像','mock-board');
@@ -448,7 +454,55 @@ begin
   Check((B[0]=A[3]) and (B[2]=A[1]),'Virtual paper changed between consecutive turns');
   Check((B[1]<>A[1]) and (B[3]<>A[3]),'Consecutive turns reused virtual paper');
 
-  CapturePaper := False;
+  CapturePaperWidth := 0;
+  CameraMode := 0;
+  RestoreDefaults;
+end;
+
+procedure VerifyNewspaper;
+var
+  Original: TArray<string>;
+  I, J: Integer;
+begin
+  Check((PresetWrites.Values['綴じ方向']='左綴じ') and
+    (PresetWrites.Values['綴じ方']='折り') and
+    (PresetWrites.Values['表紙の描画']='新聞紙') and
+    (PresetWrites.Values['裏表紙の描画']='新聞紙') and
+    (PresetWrites.Values['ページの描画']='新聞記事'),'Newspaper preset settings');
+  Check((PresetWrites.Values['表紙の色']=PresetWrites.Values['用紙色']) and
+    (PresetWrites.Values['裏表紙の色']=PresetWrites.Values['用紙色']) and
+    (PresetWrites.Values['表紙の光沢']='0') and
+    (PresetWrites.Values['裏表紙の光沢']='0') and
+    (PresetWrites.Values['ページの光沢']='0'),'Newspaper stock settings');
+  CameraMode := 1;
+  CapturePaperWidth := 320;
+  Select('切替パターン',1);
+  Track('進行度',0);
+  Render(False);
+  Original := PaperHashes;
+  Check(Length(Original)=6,'Newspaper must render four cover faces and two inside pages');
+  for I := 0 to High(Original) do
+    for J := 0 to I-1 do
+      Check(Original[I]<>Original[J],'Newspaper faces must have distinct print layouts');
+
+  Track('進行度',1);
+  Render(False);
+  Check((Length(PaperHashes)=6) and (PaperHashes[4]<>Original[4]) and
+    (PaperHashes[5]<>Original[5]),'Newspaper articles must vary with page position');
+
+  Track('進行度',0);
+  PresetWrites.Values['描画色'] := '762c2c';
+  ApplyMockValues;
+  Render(False);
+  Check(Length(PaperHashes)=6,'Newspaper faces missing after changing print color');
+  for I := 0 to High(Original) do
+    Check(PaperHashes[I]<>Original[I],'Newspaper face reused its previous print color');
+
+  FileItem('裏表紙の外側画像','mock-newspaper');
+  Render(False);
+  Check((Length(PaperHashes)=5) and (Paths.IndexOf('image:mock-newspaper')>=0),
+    'Newspaper rear cover must accept a custom image');
+  CapturePaperWidth := 0;
   CameraMode := 0;
   RestoreDefaults;
 end;
@@ -468,7 +522,8 @@ begin
   Check((Progress^.S=0) and (Progress^.E=1) and
     (Abs(Progress^.Step-0.01)<1e-9) and (Progress^.Value=0),'Progress range');
   Options := PItemOption(PFILTER_ITEM_SELECT(Item('本の種類'))^.List);
-  Check((Options[12].Name<>nil) and (Options[13].Name=nil),'Preset count');
+  Check((Options[12].Name<>nil) and (string(Options[13].Name)='新聞') and
+    (Options[14].Name=nil),'Preset count and newspaper option');
 
   MidHash := Render;
   Check(MidHash=Render,'Default frame changed after caching');
@@ -488,7 +543,7 @@ begin
     Check(PresetWrites.Values['縦横比']='1.5','Image aspect was not applied');
   end;
 
-  for Preset := 0 to 12 do
+  for Preset := 0 to 13 do
   begin
     RestoreDefaults;
     TestPresetName := Options[Preset].Name;
@@ -505,6 +560,7 @@ begin
       Check(MidHash<>PreviousHash,'Presets render identical books');
     PresetHashes := PresetHashes+[MidHash];
   end;
+  VerifyNewspaper;
 
   RestoreDefaults;
   for Binding := 0 to 2 do

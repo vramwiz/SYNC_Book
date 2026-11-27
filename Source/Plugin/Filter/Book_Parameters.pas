@@ -69,9 +69,9 @@ const
     '*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.tif;*.tiff'#0'すべてのファイル (*.*)'#0'*.*'#0;
   PresetNames: array[TBookPreset] of PWideChar =
     ('ハードカバー','ソフトカバー','文庫本','古書','魔法書','絵本','漫画',
-     '雑誌','ノート','リングノート','手帳','写真アルバム','和綴じ本');
+     '雑誌','ノート','リングノート','手帳','写真アルバム','和綴じ本','新聞');
   CoverNames: array[TCoverPattern] of PWideChar =
-    ('無地','布張り','革張り','装飾付き');
+    ('無地','布張り','革張り','装飾付き','新聞紙');
   StateNames: array[TPageState] of PWideChar =
     ('通常の見開きページ','最初のページ','最終ページ');
   ImageNames: array[TImageMode] of PWideChar =
@@ -425,7 +425,7 @@ begin
   Track(btOpeningGap, S.OpeningGap);
   Select(bcBinding, '綴じ方向', Ord(S.Binding), ['左綴じ','右綴じ','上綴じ']);
   Select(bcBindingStyle, '綴じ方', Ord(S.BindingStyle),
-    ['上製本','無線綴じ','糸綴じ','リング','和綴じ','留め具付き']);
+    ['上製本','無線綴じ','糸綴じ','リング','和綴じ','留め具付き','折り']);
   AddButton(RatioButton, '画像の縦横比を反映', ApplyImageRatio);
   EndGroup(1);
   Group(2, 'アニメーション', True);
@@ -449,7 +449,7 @@ begin
   Color(ciPaper, S.Paper.Color);
   Color(ciInk, S.Paper.Ink);
   Select(bcPaper, 'ページの描画', Ord(S.Paper.Pattern), ['白紙','横罫線','縦罫線','方眼',
-    'ダミー文字（横書き）','ダミー文字（縦書き）','ダミー文字と図形','楽譜']);
+    'ダミー文字（横書き）','ダミー文字（縦書き）','ダミー文字と図形','楽譜','新聞記事']);
   Track(btBulge, S.Paper.Bulge);
   Track(btSoftness, S.Paper.Softness);
   Track(btPaperShine, S.Paper.Shine);

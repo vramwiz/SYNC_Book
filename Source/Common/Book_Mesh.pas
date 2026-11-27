@@ -87,7 +87,8 @@ type
     Front, Back: THinge;
     function ColorMaterial(Color: Cardinal; Shine: Double = 0): Integer;
     function CoverMaterial(const Cover: TCoverSettings; Kind: TTextureKind;
-      const Path: string; Aspect: Double): Integer;
+      const Path: string; Aspect: Double; NewsPage: TPaperPattern = ppNewsStock;
+      Seed: Integer = 0): Integer;
     function PaperMaterial(Page: Integer; LeftSide: Boolean; const M: TBookMotion): Integer;
     function FaceVertex(const Pos, Normal: TBookVector; U, V: Double;
       Positive: Boolean): TBookVertex;
@@ -201,7 +202,8 @@ begin
 end;
 
 function TMeshBuilder.CoverMaterial(const Cover: TCoverSettings;
-  Kind: TTextureKind; const Path: string; Aspect: Double): Integer;
+  Kind: TTextureKind; const Path: string; Aspect: Double; NewsPage: TPaperPattern;
+  Seed: Integer): Integer;
 var
   Mat: TBookMaterial;
 begin
@@ -212,6 +214,13 @@ begin
   Mat.Shine := Cover.Shine;
   Mat.Path := Path;
   Mat.Aspect := Aspect;
+  if Cover.Pattern = cpNewsprint then
+  begin
+    Mat.Kind := txPaper;
+    Mat.Ink := Settings.Paper.Ink;
+    Mat.Pattern := Ord(NewsPage);
+    Mat.Seed := Seed;
+  end;
   Result := Mesh.AddMaterial(Mat);
 end;
 
@@ -348,9 +357,10 @@ procedure TMeshBuilder.Board(const Hinge: THinge; const Cover: TCoverSettings;
 var
   Outer, Inner: TRibbon;
   I, Edge: Integer;
-  Across, SignedThickness, Offset, Radius, W, X: Double;
+  Across, SignedThickness, Offset, Radius, W, X, EdgeShade: Double;
   P: TBookVector;
   OuterMat, InnerMat, EdgeMat: Integer;
+  NewsPage: TPaperPattern;
   A, B, C, D: TBookVector;
 begin
   SignedThickness := Thickness;
@@ -371,9 +381,13 @@ begin
     Inner[I].H := P.H;
     Inner[I].Width := W;
   end;
-  OuterMat := CoverMaterial(Cover, txCover, Cover.OutsideFile, Settings.Aspect);
-  InnerMat := CoverMaterial(Cover, txLining, Cover.InsideFile, Settings.Aspect);
-  EdgeMat := ColorMaterial(Shade(Cover.Color,0.74), Cover.Shine*0.62);
+  if IsFront then NewsPage := ppNewsFront else NewsPage := ppNewsBack;
+  OuterMat := CoverMaterial(Cover, txCover, Cover.OutsideFile, Settings.Aspect, NewsPage);
+  InnerMat := CoverMaterial(Cover, txLining, Cover.InsideFile, Settings.Aspect,
+    ppNewsprint, 1000000+Ord(IsFront));
+  EdgeShade := 0.74;
+  if Cover.Pattern = cpNewsprint then EdgeShade := 0.89;
+  EdgeMat := ColorMaterial(Shade(Cover.Color,EdgeShade), Cover.Shine*0.62);
   Surface(Outer, Length, 0, OuterMat, IsFront);
   Surface(Inner, Length, 0, InnerMat, not IsFront);
   for Edge := -1 to 1 do
@@ -702,7 +716,8 @@ begin
       (Width = Settings.Width) and (Aspect = Settings.Aspect) and
       (Thickness = Settings.Thickness) and (Binding = Settings.Binding) and
       (BindingStyle = Settings.BindingStyle) and SameCover(Front,Settings.Front)
-      and SameCover(Back,Settings.Back) and SameCover(Spine,Settings.Spine) then
+      and SameCover(Back,Settings.Back) and SameCover(Spine,Settings.Spine)
+      and (Paper.Ink = Settings.Paper.Ink) then
     begin
       Mesh.ResetCounts(Mesh.FBoardMaterialCount,Mesh.FBoardQuadCount);
       Exit;
@@ -736,6 +751,7 @@ begin
     Length := Settings.Width;
   end;
   Inset := Min(Span,Length)*0.012;
+  if Settings.BindingStyle = bsFolded then Inset := Inset*0.2;
   ThicknessLimit := Settings.Thickness*0.82;
   Depth := Settings.Front.Thickness+Settings.Back.Thickness;
   BoardFront := Settings.Front.Thickness*Min(1.0,ThicknessLimit/Depth);

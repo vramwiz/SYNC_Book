@@ -8,15 +8,15 @@ interface
 
 type
   TBinding = (bdLeft, bdRight, bdTop);
-  TBindingStyle = (bsCase, bsGlue, bsSewn, bsRing, bsJapanese, bsClasp);
+  TBindingStyle = (bsCase, bsGlue, bsSewn, bsRing, bsJapanese, bsClasp, bsFolded);
   TTransition = (trOpen, trTurn, trClose);
   TTurnStyle = (tsNormal, tsCurl, tsBundle, tsFlip, tsSearch, tsWind);
   TBookPreset = (bpHardback, bpPaperback, bpPocket, bpAntique, bpMagic,
     bpPicture, bpManga, bpMagazine, bpNotebook, bpRing, bpPlanner, bpAlbum,
-    bpJapanese);
-  TCoverPattern = (cpPlain, cpCloth, cpLeather, cpOrnate);
+    bpJapanese, bpNewspaper);
+  TCoverPattern = (cpPlain, cpCloth, cpLeather, cpOrnate, cpNewsprint);
   TPaperPattern = (ppBlank, ppRuled, ppVertical, ppGrid, ppText, ppVerticalText,
-    ppFigures, ppMusic);
+    ppFigures, ppMusic, ppNewsprint, ppNewsFront, ppNewsBack, ppNewsStock);
   TPageState = (psSpread, psFirst, psLast);
   TImageMode = (imBuiltIn, imSpread, imLeft, imRight, imSeparate);
   TImageFit = (ifStretch, ifCrop);
@@ -86,6 +86,7 @@ type
   end;
 
 const
+  NewsprintColor = $DDD9CF;
   Presets: array[TBookPreset] of TPresetData = (
     (Width:300; Aspect:1.42; Thickness:42; Board:5; Cover:$29493E; Spine:$20392F; Paper:$F3E5CA; Ink:$56453A; Pattern:cpOrnate; Marks:ppText; Style:bsCase; Direction:bdLeft; Bulge:42; Soft:54; Shine:17; Radius:4; SpineRadius:56),
     (Width:280; Aspect:1.51; Thickness:25; Board:1.4; Cover:$395B89; Spine:$32486C; Paper:$F5EADA; Ink:$4F525D; Pattern:cpPlain; Marks:ppText; Style:bsGlue; Direction:bdLeft; Bulge:53; Soft:72; Shine:22; Radius:1; SpineRadius:22),
@@ -99,7 +100,11 @@ const
     (Width:286; Aspect:1.30; Thickness:20; Board:1.8; Cover:$467E90; Spine:$304754; Paper:$FBF8ED; Ink:$83A6B6; Pattern:cpCloth; Marks:ppGrid; Style:bsRing; Direction:bdTop; Bulge:27; Soft:62; Shine:15; Radius:8; SpineRadius:18),
     (Width:212; Aspect:1.56; Thickness:31; Board:3.2; Cover:$403E58; Spine:$302D42; Paper:$F5EBDA; Ink:$8D8291; Pattern:cpLeather; Marks:ppGrid; Style:bsSewn; Direction:bdLeft; Bulge:39; Soft:50; Shine:19; Radius:11; SpineRadius:65),
     (Width:394; Aspect:1.05; Thickness:52; Board:6; Cover:$58373D; Spine:$42262F; Paper:$ECE0CC; Ink:$9B8375; Pattern:cpCloth; Marks:ppBlank; Style:bsCase; Direction:bdLeft; Bulge:29; Soft:27; Shine:25; Radius:9; SpineRadius:58),
-    (Width:287; Aspect:1.49; Thickness:20; Board:1.5; Cover:$394B73; Spine:$2A3959; Paper:$EEE1C2; Ink:$584F4C; Pattern:cpCloth; Marks:ppVerticalText; Style:bsJapanese; Direction:bdRight; Bulge:58; Soft:67; Shine:7; Radius:2; SpineRadius:12)
+    (Width:287; Aspect:1.49; Thickness:20; Board:1.5; Cover:$394B73; Spine:$2A3959; Paper:$EEE1C2; Ink:$584F4C; Pattern:cpCloth; Marks:ppVerticalText; Style:bsJapanese; Direction:bdRight; Bulge:58; Soft:67; Shine:7; Radius:2; SpineRadius:12),
+    (Width:406; Aspect:1.34; Thickness:2.2; Board:0.15; Cover:NewsprintColor;
+      Spine:NewsprintColor; Paper:NewsprintColor; Ink:$252525; Pattern:cpNewsprint;
+      Marks:ppNewsprint; Style:bsFolded; Direction:bdLeft; Bulge:24; Soft:93;
+      Shine:0; Radius:0; SpineRadius:42)
   );
 
 function BookPreset(Preset: TBookPreset): TBookSettings;
